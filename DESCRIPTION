@@ -1,0 +1,14 @@
+Package: caramba
+Type: Package
+Title: Get standardized data
+Description: Get standardized data from the Carob project
+Version: 0.1-0
+Imports: yuri
+Date: 2025-06-01
+Encoding: UTF-8
+Authors@R: c(
+	person("Robert J.", "Hijmans", role = c("cre", "aut"),  email="r.hijmans@gmail.com")
+	)
+Maintainer: Robert J. Hijmans <r.hijmans@gmail.com> 
+License: GPL (>=3)
+
