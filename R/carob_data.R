@@ -1,23 +1,65 @@
 
+
+get_compiled <- function(group, path, overwrite=FALSE) {
+	d <- file.path(path, "compiled")
+	dir.create(d, FALSE, FALSE)
+	fcsv <- file.path(d, paste0("carob_", group, c(".csv", "_meta.csv")))
+	if (!overwrite) {
+		if (all(file.exists(fcsv))) {
+			return(fcsv)
+		}
+	}	
+	url <- paste0("https://geodata.ucdavis.edu/carob/carob_", group, "-cc.zip")
+	zf <- file.path(d, basename(url))
+	test <- try(download.file(url, zf, mode="wb", quiet=TRUE), silent=TRUE)
+	if (test == 0) {
+		unzip(zf, exdir=d)
+	} else {
+		warning(paste(uri, "is not available"))
+		NULL
+	}
+}
+
+
+get_standardized <- function(uri, path, overwrite=FALSE) {
+	uri <- ifelse (grepl(":|/", uri), yuri::simpleURI(uri), uri)
+
+	exd <- file.path(path, "clean")
+	dir.create(exd, FALSE, FALSE)
+	
+	if (!overwrite) {
+		fcsv <- file.path(exd, paste0(uri, "-cc", c(".csv", "_meta.csv")))
+		if (all(file.exists(fcsv))) {
+			return(fcsv)
+		}
+	}
+	
+	url <- paste0("https://geodata.ucdavis.edu/carob/zip/", uri, ".zip")
+	zf <- file.path(exd, basename(url))
+	
+	test <- try(download.file(url, zf, mode="wb", quiet=TRUE), silent=TRUE)
+	if (test == 0) {
+		unzip(zf, exdir=exd)
+	} else {
+		warning(paste(uri, "is not available"))
+		NULL
+	}
+}
+
+
+get_raw <- function(uri, path) {
+
+
+
+}
+
+
+
 carob_data <- function() {
 
 }
 
 
-
-
-aggregated_data <- function(path, group, cc=FALSE) {
-
-	if (cc) {
-		f <- file.path(path, "data", "compiled", paste0("carob_", group, "-cc.csv"))	
-	} else {
-		f <- file.path(path, "data", "compiled", paste0("carob_", group, ".csv"))
-	}
-	if (!file.exists(f)) {
-		stop("these data do not exist. First run 'make_carob'?")
-	}
-	data.frame(data.table::fread(f))	
-}
 
 
 read_carob <- function(uri) {
