@@ -1,10 +1,12 @@
 Package: caramba
 Type: Package
 Title: Get standardized data
-Description: Get standardized data from the Carob project
-Version: 0.1-0
+Description: Get standardized agricultural research data from the Carob project. Standarsdized data that has an open license is downloaded directly, other datasets are processed on the fly.
+Version: 0.1-1
+Depends: R (>= 4.1.0)
 Imports: yuri
-Date: 2025-06-01
+Suggests: httr
+Date: 2025-06-06
 Encoding: UTF-8
 Authors@R: c(
 	person("Robert J.", "Hijmans", role = c("cre", "aut"),  email="r.hijmans@gmail.com")

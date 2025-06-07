@@ -3,7 +3,7 @@
 .caramba_environment <- new.env(parent=emptyenv())
 
 repo <- function() {
-	x <- httr::GET("https://api.github.com/repos/carob-data/carob/git/trees/master?recursive=true")
+	x <- httr::GET("https://api.github.com/repos/carob-data/carob/git/trees/main?recursive=true")
 	z <- httr::content(x)
 	d <- z$tree
 	s <- sapply(d, length)
@@ -11,10 +11,11 @@ repo <- function() {
 	d <- lapply(d, unlist)
 	d <- do.call(rbind, d)
 	d <- d[grepl("^scripts", d[,"path"]), ] |> data.frame()
-	d$dataset_id <- basename(d$path)
-	d$pending <- grep("_pending", d$path)
+	d$dataset_id <- gsub(".R", "", basename(d$path), ignore.case=TRUE)
+	d$pending <- grepl("_pending", d$path)
 	d
 }
+
 
 
 get_scripts <- function() {	
@@ -25,110 +26,176 @@ get_scripts <- function() {
 }
 
 
-meta <- function() {
-	u <- "https://geodata.ucdavis.edu/carob/carob_all_metadata.csv"
-	f <- tempfile()
-	download.file(u, f, quiet=TRUE)
-	r <- read.csv(f)
-}
-
-
-get_meta <- function() {
+get_metadata <- function() {
 	if (is.null(.caramba_environment$meta)) {
-		.caramba_environment$meta <- meta()
+		u <- "https://geodata.ucdavis.edu/carob/carob_all_metadata.csv"
+		f <- tempfile()
+		utils::download.file(u, f, quiet=TRUE)
+		.caramba_environment$meta <- utils::read.csv(f)
 	} 
 	.caramba_environment$meta
 }
 
 
 
-get_standardized <- function(uri, path, overwrite=FALSE) {
-	uri <- ifelse (grepl(":|/", uri), yuri::simpleURI(uri), uri)
-
-	exd <- file.path(path, "clean")
-	dir.create(exd, FALSE, FALSE)
+get_standardized <- function(did, path, overwrite) {
+	path <- file.path(path, "standardized")
+	dir.create(path, FALSE, TRUE)
 	
 	if (!overwrite) {
-		fcsv <- file.path(exd, paste0(uri, "-cc", c(".csv", "_meta.csv")))
+		fcsv <- file.path(path, paste0(did, c(".csv", "_meta.csv")))
 		if (all(file.exists(fcsv))) {
 			return(fcsv)
 		}
+	}	
+	url <- paste0("https://geodata.ucdavis.edu/carob/zip/", did, ".zip")
+	zf <- file.path(path, basename(url))
+	test <- try(utils::download.file(url, zf, mode="wb", quiet=TRUE), silent=TRUE)
+	if (test == 0) {
+		ff <- utils::unzip(zf, exdir=path)
+	} else {
+		NULL
+	}
+}
+
+check_script_ongithub <- function(did) {
+	d <- get_scripts()
+	i <- stats::na.omit(match(did, d$dataset_id))
+	if (length(i) == 0) {
+		warning(paste("not available: ", did))
+		return(NULL)
+	}
+	if (d$pending[i]) {
+		warning(paste("ignored pending dataset: ", did))
+		return(NULL)
 	}
 	
-	url <- paste0("https://geodata.ucdavis.edu/carob/zip/", uri, ".zip")
-	zf <- file.path(exd, basename(url))
+	dirname(gsub("scripts/", "", d$path[i]))
+}
+
+
+get_raw <- function(did, group, path, overwrite) {
+
+	rfile <- paste0(did, ".R")
+	if (!overwrite) {
+		ff <- list.files(file.path(path, "data", "clean", group), pattern=did, full.names=TRUE)
+		if (length(ff) > 1) {
+			return(ff)
+		}
+	}
 	
-	test <- try(download.file(url, zf, mode="wb", quiet=TRUE), silent=TRUE)
-	if (test == 0) {
-		unzip(zf, exdir=exd)
+	u <- paste0("https://raw.githubusercontent.com/carob-data/carob/refs/heads/main/scripts/", group, "/", rfile)
+	x <- httr::GET(u)
+	if (x$status != 200) {
+		warning(paste("could not access script: ", basename(u)))
+		return(NULL)
+	}
+	r <- httr::content(x)	
+	carob_script <- NULL
+	carob_script <- eval(parse(text=r)) 
+	message(paste("processing", basename(u))); utils::flush.console()
+	if (carob_script(path)) {
+		ff <- list.files(file.path(path, "data/clean"), full.names=TRUE, recursive=TRUE, pattern=did)
+		rpath <- file.path(path, "scripts", rfile)
+		dir.create(dirname(rpath), FALSE, TRUE)
+		writeLines(r, rpath)
+		ff
 	} else {
-		warning(paste(uri, "is not available"))
+		warning(paste("script failed: ", basename(u)))
 		NULL
 	}
 }
 
 
-get_raw <- function(uri, path) {
 
-	uri <- yuri::simpleURI(uri)
-
-	d <- get_scripts()
-	i <- stats::na.omit(match(uri, d$dataset_id))
-	if (length(i) == 0) {
-		stop("this URI is not in Carob")
+get_path <- function(path) {
+	if (is.null(path)) {
+		path <- file.path(tempdir(), "carob")
+	} else {
+		stopifnot(file.exists(path))
 	}
-	if (d$pending[i]) {
-		stop("this dataset is pending and this function won't run it")	
-	}
-
-	u <- paste0("https://raw.githubusercontent.com/carob-data/carob/refs/heads/master/", d$path[i])
-	f <- tempfile()
-	download.file(u, f, quiet=TRUE)
-	r <- readLines(f)
-
-	carob_script <- NULL
-	carob_script <- eval(parse(text=r)) 
-	carob_script(NULL)
+	path <- file.path(path)
+	dir.create(path, FALSE, TRUE)
+	path
 }
 
 
+read_set <- function(ff, did) {
+	nms <- gsub(paste0(did, "|\\.csv$"), "", basename(ff))
+	nms[nms==""] <- "wide"
+	nms[nms=="_meta"] <- "metadata"
+	nms <- gsub("_", "", nms)
+	x <- lapply(ff, utils::read.csv)
+	names(x) <- nms
+	x
+}
 
-get_dataset <- function(uri, path, overwrite=FALSE) {
-	m <- get_meta()
+
+carob_dataset <- function(uri, path=NULL, read=TRUE, overwrite=FALSE) {
+	m <- get_metadata()
+	did <- ifelse (grepl(":|/", uri), yuri::simpleURI(uri), uri)
+
+	path <- get_path(path)
+
 # todo: vectorize over uri
-	did <- yuri::simpleURI(uri)
 	i <- stats::na.omit(match(did, m$dataset_id))[1]
 	if (length(i) > 0) {
-		if (grepl("CC", d$license[i])) {
-			get_standardized(uri, path, overwrite) {	
+		group <- m$group[i]
+		if (grepl("CC", m$license[i])) {
+			out <- get_standardized(did, path, overwrite)
 		} else {
-			get_raw(uri, path, overwrite)
+			out <- get_raw(did, group, path, overwrite)
 		}
 	} else {
 		# to check if perhaps the script exists but is not in the published metadata yet
-		get_raw(uri, path, overwrite)
+		group <- check_script_ongithub(did)
+		if (!is.null(group)) {
+			out <- get_raw(did, group, path, overwrite)
+		}
+	}
+	if (read) {
+		read_set(out, did)
+	} else {
+		out
 	}
 }
 
 
+read_col <- function(ff, group) {
+	nms <- gsub(paste0("carob_", group, "|-cc|\\.csv$"), "", basename(ff))
+	nms[nms==""] <- "wide"
+	nms <- gsub("_", "", nms)
+	x <- lapply(ff, utils::read.csv)
+	names(x) <- nms
+	x
+}
 
 
-get_compiled <- function(group, path, overwrite=FALSE) {
-	d <- file.path(path, "compiled")
+carob_collection <- function(group, path=NULL, read=TRUE, overwrite=FALSE) {
+	d <- file.path(get_path(path), "compiled")
 	dir.create(d, FALSE, FALSE)
-	fcsv <- file.path(d, paste0("carob_", group, c(".csv", "_meta.csv")))
 	if (!overwrite) {
-		if (all(file.exists(fcsv))) {
-			return(fcsv)
+		fcsv <- file.path(d, paste0("carob_", group, "-cc.csv"))
+		if (file.exists(fcsv)) {
+			ff <- list.files(pattern=paste0("^carob_", group, ".*\\.csv$"), d, full.names=TRUE)
+			if (read) {
+				return(read_col(ff))
+			} 
+			return(ff)
 		}
 	}	
 	url <- paste0("https://geodata.ucdavis.edu/carob/carob_", group, "-cc.zip")
 	zf <- file.path(d, basename(url))
-	test <- try(download.file(url, zf, mode="wb", quiet=TRUE), silent=TRUE)
+	test <- try(utils::download.file(url, zf, mode="wb", quiet=TRUE), silent=TRUE)
 	if (test == 0) {
-		unzip(zf, exdir=d)
+		ff <- utils::unzip(zf, exdir=d)
+		if (read) {
+			read_col(ff, group)
+		} else {
+			ff
+		}
 	} else {
-		warning(paste(uri, "is not available"))
+		warning(paste(group, "is not available"))
 		NULL
 	}
 }
