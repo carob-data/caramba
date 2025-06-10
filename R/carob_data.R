@@ -153,6 +153,7 @@ carob_dataset <- function(uri, path=NULL, read=TRUE, overwrite=FALSE) {
 			out <- get_raw(did, group, path, overwrite)
 		}
 	}
+	out <- grep(".csv$", out, value=TRUE)
 	if (read) {
 		read_set(out, did)
 	} else {
