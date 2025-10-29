@@ -3,15 +3,17 @@
 \alias{carob_dataset}
 
 \title{
-Get the a Carob collection
+Get one of more Carob datasets
 }
 
 \description{
-Download a Carob collection. That is, a compilation of multiple standardized individual datasets. Note that only the datasets with a Creative Commons license of comparable are included in the collections.
+Download a Carob dataset. That is, an individual dataset for which a Carob script exists. 
+
+If the dataset has a Creative Commons or compariable license the processed data is downloaded. In other cases, the data is downloaded from the original source and processed locally.
 }
 
 \usage{
-carob_dataset(uri, path=NULL, read=TRUE, overwrite=FALSE)
+carob_dataset(uri, path=NULL, read=TRUE, overwrite=FALSE, orginal=FALSE)
 }
  
 \arguments{
@@ -19,11 +21,11 @@ carob_dataset(uri, path=NULL, read=TRUE, overwrite=FALSE)
   \item{path}{character. The path to download the data to}
   \item{read}{logical. If \code{TRUE} the downloaded files are read after downloading}
   \item{overwrite}{logical. If \code{TRUE} already downloaded files are overwritten}
+  \item{original}{logical. If \code{TRUE} the original data source is downloaded and processed locally}
 }
 
 \value{
-character (filenames, if \code{read=FALSE}
-list (if \code{read=TRUE})
+list with elements "wide", "meta" (and perhaps more, such as "long") with data.frames; or, if \code{read=FALSE}, a list of character values (filenames).
 }
 
 \seealso{\code{\link{carob_collection}}}

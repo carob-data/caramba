@@ -2,11 +2,11 @@ Package: caramba
 Type: Package
 Title: Get standardized agricultural research data
 Description: Get agricultural research data that is standardized using the terminag vocabulary by the Carob project. Standardized data that has an open license is downloaded directly, other datasets are processed on the fly.
-Version: 0.1-1
+Version: 0.1-2
 Depends: R (>= 4.1.0)
 Imports: yuri
 Suggests: httr
-Date: 2025-06-06
+Date: 2025-10-29
 Encoding: UTF-8
 Authors@R: c(
 	person("Robert J.", "Hijmans", role = c("cre", "aut"),  email="r.hijmans@gmail.com")

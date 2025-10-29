@@ -131,17 +131,11 @@ read_set <- function(ff, did) {
 }
 
 
-carob_dataset <- function(uri, path=NULL, read=TRUE, overwrite=FALSE) {
-	m <- get_metadata()
-	did <- ifelse (grepl(":|/", uri), yuri::simpleURI(uri), uri)
-
-	path <- get_path(path)
-
-# todo: vectorize over uri
-	i <- stats::na.omit(match(did, m$dataset_id))[1]
+read_one_dataset <- function(m, did, path, read, overwrite, original){
+	i <- stats::na.omit(match(tolower(did), tolower(m$dataset_id)))[1]
 	if (length(i) > 0) {
 		group <- m$group[i]
-		if (grepl("CC", m$license[i])) {
+		if ((!original) && grepl("CC", m$license[i])) {
 			out <- get_standardized(did, path, overwrite)
 		} else {
 			out <- get_raw(did, group, path, overwrite)
@@ -158,6 +152,31 @@ carob_dataset <- function(uri, path=NULL, read=TRUE, overwrite=FALSE) {
 		read_set(out, did)
 	} else {
 		out
+	}
+}
+
+carob_dataset <- function(uri, path=NULL, read=TRUE, overwrite=FALSE, original=FALSE) {
+	m <- caramba:::get_metadata()
+	dids <- ifelse (grepl(":|/", uri), yuri::simpleURI(uri), uri)
+	path <- caramba:::get_path(path)
+
+	out <- lapply(dids, function(did) caramba:::read_one_dataset(m, did, path, read, overwrite, original))
+
+	wide <- lapply(out, \(x) x$wide)
+	long <- lapply(out, \(x) x$long)
+	meta <- lapply(out, \(x) x$meta)
+
+	if (read) {
+		xout <- list()
+		xout$wide <- do.call(bindr, wide)
+		xout$long <- do.call(bindr, long)
+		xout$metadata <- do.call(bindr, meta)
+		xout	
+	} else {
+		xout <- list()
+		xout$data <- unlist(data)
+		xout$metadata <- unlist(meta)
+		xout
 	}
 }
 
