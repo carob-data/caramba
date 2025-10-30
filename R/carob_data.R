@@ -155,29 +155,27 @@ read_one_dataset <- function(m, did, path, read, overwrite, original){
 	}
 }
 
-carob_dataset <- function(uri, path=NULL, read=TRUE, overwrite=FALSE, original=FALSE) {
+
+carob_dataset <- function(uri, path=NULL, read=TRUE, overwrite=FALSE, from_source=FALSE) {
 	m <- caramba:::get_metadata()
+	uri <- unique(uri)
 	dids <- ifelse (grepl(":|/", uri), yuri::simpleURI(uri), uri)
 	path <- caramba:::get_path(path)
 
-	out <- lapply(dids, function(did) caramba:::read_one_dataset(m, did, path, read, overwrite, original))
-
-	wide <- lapply(out, \(x) x$wide)
-	long <- lapply(out, \(x) x$long)
-	meta <- lapply(out, \(x) x$meta)
+	out <- lapply(dids, function(did) caramba:::read_one_dataset(m, did, path, read, overwrite, from_source))
 
 	if (read) {
-		xout <- list()
-		xout$wide <- do.call(bindr, wide)
-		xout$long <- do.call(bindr, long)
-		xout$metadata <- do.call(bindr, meta)
-		xout	
+		wide <- lapply(out, \(x) x$wide)
+		long <- lapply(out, \(x) x$long)
+		meta <- lapply(out, \(x) x$metadata)
+		out <- list()
+		out$wide <- do.call(bindr, wide)
+		out$long <- do.call(bindr, long)
+		out$meta <- do.call(bindr, meta)
 	} else {
-		xout <- list()
-		xout$data <- unlist(data)
-		xout$metadata <- unlist(meta)
-		xout
+		names(out) <- uri
 	}
+	out
 }
 
 

@@ -13,7 +13,7 @@ If the dataset has a Creative Commons or compariable license the processed data 
 }
 
 \usage{
-carob_dataset(uri, path=NULL, read=TRUE, overwrite=FALSE, orginal=FALSE)
+carob_dataset(uri, path=NULL, read=TRUE, overwrite=FALSE, from_source=FALSE)
 }
  
 \arguments{
@@ -21,11 +21,11 @@ carob_dataset(uri, path=NULL, read=TRUE, overwrite=FALSE, orginal=FALSE)
   \item{path}{character. The path to download the data to}
   \item{read}{logical. If \code{TRUE} the downloaded files are read after downloading}
   \item{overwrite}{logical. If \code{TRUE} already downloaded files are overwritten}
-  \item{original}{logical. If \code{TRUE} the original data source is downloaded and processed locally}
+  \item{from_source}{logical. If \code{TRUE}, instead of downloading the processes dataset from Carob (if availalbe given the license), the original data source is downloaded and processed locally}
 }
 
 \value{
-list with elements "wide", "meta" (and perhaps more, such as "long") with data.frames; or, if \code{read=FALSE}, a list of character values (filenames).
+list with elements "wide", "meta" (and perhaps more, such as "long") with data.frames; or, if \code{read=FALSE}, a list of filenames (one element per dataset).
 }
 
 \seealso{\code{\link{carob_collection}}}
