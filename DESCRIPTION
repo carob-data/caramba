@@ -4,7 +4,8 @@ Title: Get standardized agricultural research data
 Description: Get agricultural research data that is standardized using the terminag vocabulary by the Carob project. Standardized data that has an open license is downloaded directly, other datasets are processed on the fly.
 Version: 0.1-2
 Depends: R (>= 4.1.0)
-Imports: yuri
+Imports: yuri, carobiner
+Remotes: github::carob-data/yuri, github::controvoc/carobiner
 Suggests: httr
 Date: 2025-10-29
 Encoding: UTF-8
