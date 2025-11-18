@@ -135,8 +135,11 @@ read_one_dataset <- function(m, did, path, read, overwrite, original){
 	i <- stats::na.omit(match(tolower(did), tolower(m$dataset_id)))[1]
 	if (length(i) > 0) {
 		group <- m$group[i]
-		if ((!original) && grepl("CC", m$license[i])) {
-			out <- get_standardized(did, path, overwrite)
+		if ((!original) && grepl("CC|ETALAB|not specified", m$license[i])) {
+			out <- try(get_standardized(did, path, overwrite))
+			if (inherits(out, "try-error")) {
+				out <- get_raw(did, group, path, overwrite)
+			}
 		} else {
 			out <- get_raw(did, group, path, overwrite)
 		}
