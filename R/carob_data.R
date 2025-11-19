@@ -84,7 +84,8 @@ get_raw <- function(did, group, path, overwrite) {
 		}
 	}
 	
-	u <- paste0("https://raw.githubusercontent.com/carob-data/carob/refs/heads/main/scripts/", group, "/", rfile)
+	burl <- "https://raw.githubusercontent.com/carob-data/carob/refs/heads/main/scripts/"
+	u <- paste0(burl, group, "/", rfile)
 	x <- httr::GET(u)
 	if (x$status != 200) {
 		warning(paste("could not access script: ", basename(u)))
@@ -93,6 +94,21 @@ get_raw <- function(did, group, path, overwrite) {
 	r <- httr::content(x)	
 	carob_script <- NULL
 	carob_script <- eval(parse(text=r)) 
+
+	sp <- file.path(path, "scripts", group)
+	fp <- file.path(sp, "_functions.R")
+	if (!file.exists(fp) && grepl("carobiner::get_function", r)) {
+		uf <- paste0(burl, group, "/_functions.R")
+		xf <- httr::GET(uf)
+		if (xf$status != 200) {
+			warning("could not access _functions.R")
+			return(NULL)
+		}
+		fr <- httr::content(xf)	
+		dir.create(sp, FALSE, TRUE)
+		writeLines(fr, fp)	
+	}
+
 	message(paste("processing", basename(u))); utils::flush.console()
 	if (carob_script(path)) {
 		ff <- list.files(file.path(path, "data/clean"), full.names=TRUE, recursive=TRUE, pattern=did)
