@@ -5,7 +5,7 @@ Description: Get agricultural research data that is standardized using the termi
 Version: 0.1-2
 Depends: R (>= 4.1.0)
 Imports: yuri, carobiner
-Remotes: github::carob-data/yuri, github::controvoc/carobiner
+Remotes: github::carob-data/yuri, github::carob-data/carobiner
 Suggests: httr
 Date: 2025-10-29
 Encoding: UTF-8
