@@ -208,20 +208,21 @@ read_col <- function(ff, group) {
 }
 
 
-carob_collection <- function(group, path=NULL, read=TRUE, overwrite=FALSE) {
+carob_collection <- function(group, path=NULL, read=TRUE, overwrite=FALSE, ...) {
 	d <- file.path(get_path(path), "compiled")
 	dir.create(d, FALSE, FALSE)
 	if (!overwrite) {
-		fcsv <- file.path(d, paste0("carob_", group, "-cc.csv"))
+		ends <- ifelse(isTRUE(list(...)$all), ".csv", "-cc.csv")
+		fcsv <- file.path(d, paste0("carob_", group, ends))
 		if (file.exists(fcsv)) {
-			ff <- list.files(pattern=paste0("^carob_", group, ".*\\.csv$"), d, full.names=TRUE)
+			ff <- list.files(pattern=paste0("^carob_", group, paste0(".*", ends, "$")), d, full.names=TRUE)
 			if (read) {
 				return(read_col(ff))
 			} 
 			return(ff)
 		}
 	}	
-	url <- paste0("https://geodata.ucdavis.edu/carob/carob_", group, "-cc.zip")
+	url <- paste0("https://geodata.ucdavis.edu/carob/carob_", group, gsub("\\.csv$", "\\.zip", ends))
 	zf <- file.path(d, basename(url))
 	test <- try(utils::download.file(url, zf, mode="wb", quiet=TRUE), silent=TRUE)
 	if (test == 0) {
